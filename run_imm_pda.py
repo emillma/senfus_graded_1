@@ -81,7 +81,7 @@ if play_movie:
 sigma_z = 3
 clutter_intensity = 0.002
 PD = 0.99
-gate_size = 3
+gate_size = 5
 
 # dynamic models
 sigma_a_CV = 0.3

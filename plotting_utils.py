@@ -29,8 +29,9 @@ def apply_settings():
     try:
         # installed with "pip install SciencePLots" (https://github.com/garrettj403/SciencePlots.git)
         # gives quite nice plots
-        plt_styles = ["science", "grid", "bright", "no-latex"]
-        plt.style.use(plt_styles)
+        plt_styles = ["science", "grid", "no-latex"]
+        # plt.style.use(plt_styles)
+        # plt.style.use("science")
         print(f"pyplot using style set {plt_styles}")
     except Exception as e:
         print(e)

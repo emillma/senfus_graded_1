@@ -38,7 +38,7 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 
 # sensor
 sigma_z = 3
-clutter_intensity = 0.00008
+clutter_intensity = 0.00009
 PD = 0.95
 gate_size = 5
 

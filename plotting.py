@@ -31,8 +31,9 @@ plt.show(block=False)
 
 # trajectory
 fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
-axs3[0].plot(*x_hat.T[:2], label=r"$\hat x$")
-axs3[0].plot(*Xgt.T[:2], label="$x$")
+axs3[0].scatter(*Z_plot_data.T, color="C2")
+axs3[0].plot(*x_hat.T[:2], label=r"$\hat x$", color="C1")
+axs3[0].plot(*Xgt.T[:2], label="$x$", color="C0")
 axs3[0].set_title(
     f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel) "
     "= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
