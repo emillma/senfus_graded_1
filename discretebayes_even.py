@@ -13,27 +13,28 @@ def discrete_bayes(
 ]:  # the new marginal and conditional: shapes=((m,), (m, n))
     """Swap which discrete variable is the marginal and conditional."""
 
-    joint = cond_pr * np.array(pr)[:, None]
+    joint = cond_pr.T * pr# TODO
 
-    marginal = joint.sum(axis=0)
+    marginal = joint.sum(axis=1)# TODO
 
     # Take care of rare cases of degenerate zero marginal,
-    conditional = joint / marginal[None]
+    assert (marginal[i] != 0 for i in range(len(marginal)))
+    conditional = (joint.T / marginal).T# TODO
 
-    # flip axes
-    conditional = conditional.T
+    # flip axes?? (n, m) -> (m, n)
+    # conditional = conditional.T
 
-    # DEBUG
+    # optional DEBUG
     assert np.all(
         np.isfinite(conditional)
-    ), "NaN or inf in conditional in discrete bayes"
+    ), f"NaN or inf in conditional in discrete bayes"
     assert np.all(
         np.less_equal(0, conditional)
-    ), "Negative values for conditional in discrete bayes"
+    ), f"Negative values for conditional in discrete bayes"
     assert np.all(
         np.less_equal(conditional, 1)
-    ), "Value more than on in discrete bayes"
-    assert np.all(
-        np.isfinite(marginal)), "NaN or inf in marginal in discrete bayes"
+    ), f"Value more than on in discrete bayes"
+
+    assert np.all(np.isfinite(marginal)), f"NaN or inf in marginal in discrete bayes"
 
     return marginal, conditional

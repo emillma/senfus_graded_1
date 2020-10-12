@@ -22,8 +22,7 @@ from estimatorduck import StateEstimator
 
 # packages
 from dataclasses import dataclass
-
-# from singledispatchmethod import singledispatchmethod
+from singledispatchmethod import singledispatchmethod
 import numpy as np
 from scipy import linalg
 from scipy.special import logsumexp
@@ -130,9 +129,11 @@ class IMM(Generic[MT]):
             immstate, Ts
         )
 
-        mixed_mode_states: List[MT] = self.mix_states(immstate, mixing_probability)
+        mixed_mode_states: List[MT] = self.mix_states(
+            immstate, mixing_probability)
 
-        predicted_mode_states = self.mode_matched_prediction(mixed_mode_states, Ts)
+        predicted_mode_states = self.mode_matched_prediction(
+            mixed_mode_states, Ts)
 
         predicted_immstate = MixtureParameters(
             predicted_mode_probability, predicted_mode_states
@@ -147,12 +148,12 @@ class IMM(Generic[MT]):
     ) -> List[MT]:
         """Update each mode in immstate with z in sensor_state."""
 
-        updated_state = [
-            fs.update(z, cs, sensor_state=sensor_state)
-            for fs, cs in zip(self.filters, immstate.components)
-        ]
+        updated_states = []
+        for filt, gaussparams in zip(self.filters, immstate.components):
+            upd = filt.update(z, gaussparams)
+            updated_states.append(upd)
 
-        return updated_state
+        return updated_states
 
     def update_mode_probabilities(
         self,
@@ -162,23 +163,28 @@ class IMM(Generic[MT]):
     ) -> np.ndarray:
         """Calculate the mode probabilities in immstate updated with z in sensor_state"""
 
-        loglikelihood = np.array(
-            [
-                fs.loglikelihood(z, cs, sensor_state=sensor_state)
-                for fs, cs in zip(self.filters, immstate.components)
-            ]
+        mode_loglikelihood = [
+            filt.loglikelihood(z, gaussparam)
+            for filt, gaussparam in zip(self.filters, immstate.components)]
+
+        # potential intermediate step logjoint =
+
+        # compute unnormalized first, numerator of eq 6.33
+        M = len(immstate.weights)
+        updated_mode_probabilities_unnormalized = np.array(
+            [mode_loglikelihood[i] + np.log(immstate.weights[i])
+             for i in range(M)]
         )
 
-        logjoint = loglikelihood + np.log(immstate.weights)
+        # normalize so sum(pk) = 1
+        # log(p_k) = log(Lambda_k) + log(pk|k-1) + log(a)
+        log_a = -logsumexp(updated_mode_probabilities_unnormalized)
+        updated_mode_probabilities = np.exp(
+            updated_mode_probabilities_unnormalized + log_a)
 
-        updated_mode_probabilities = np.exp(logjoint - logsumexp(logjoint))
-
-        assert np.all(
-            np.isfinite(updated_mode_probabilities)
-        ), "IMM.update_mode_probabilities: updated probabilities not finite "
-        assert np.allclose(
-            np.sum(updated_mode_probabilities), 1
-        ), "IMM.update_mode_probabilities: updated probabilities does not sum to one"
+        # Optional debuging
+        assert np.all(np.isfinite(updated_mode_probabilities))
+        assert np.allclose(np.sum(updated_mode_probabilities), 1)
 
         return updated_mode_probabilities
 
@@ -191,12 +197,8 @@ class IMM(Generic[MT]):
         """Update the immstate with z in sensor_state."""
 
         updated_weights = self.update_mode_probabilities(
-            z, immstate, sensor_state=sensor_state
-        )
-        updated_states = self.mode_matched_update(
-            z, immstate, sensor_state=sensor_state
-        )
-
+            z, immstate, sensor_state)
+        updated_states = self.mode_matched_update(z, immstate, sensor_state)
         updated_immstate = MixtureParameters(updated_weights, updated_states)
         return updated_immstate
 
@@ -222,77 +224,82 @@ class IMM(Generic[MT]):
         sensor_state: Dict[str, Any] = None,
     ) -> float:
 
-        raise NotImplementedError  # TODO: remove when implemented
+        # THIS IS ONLY NEEDED FOR IMM-PDA. You can therefore wait if you prefer.
 
-        mode_conditioned_ll = np.fromiter(
-            (
-                None  # TODO: your state filter (fs under) should be able to calculate the mode conditional log likelihood at z from modestate_s
-                for fs, modestate_s in zip(self.filters, immstate.components)
-            ),
-            dtype=float,
-        )
+        mode_conditioned_logllike = [
+            self.filters[i].loglikelihood(
+                z, immstate.components[i], sensor_state=sensor_state)
+            for i in range(len(self.filters))
+        ]
+        logllike = logsumexp(mode_conditioned_logllike, b=immstate.weights)
 
-        ll = None  # weighted average of likelihoods (not log!)
-
-        assert np.isfinite(ll), "IMM.loglikelihood: ll not finite"
-        assert isinstance(ll, float) or isinstance(
-            ll.item(), float
-        ), "IMM.loglikelihood: did not calculate ll to be a single float"
-        return ll
+        return logllike
 
     def reduce_mixture(
         self, immstate_mixture: MixtureParameters[MixtureParameters[MT]]
     ) -> MixtureParameters[MT]:
-        """
-        Approximate a mixture of immstates as a single immstate.
-
-        We have Pr(a), Pr(s | a), p(x| s, a).
-            - Pr(a) = immstate_mixture.weights
-            - Pr(s | a=j) = immstate_mixture.components[j].weights
-            - p(x | s=i, a=j) = immstate_mixture.components[j].components[i] # ie. Gaussian parameters
-
-        So p(x, s) = sum_j Pr(a=j) Pr(s| a=j) p(x| s, a=j),
-        which we want as a single probability Gaussian pair. Multiplying the above with
-        1 = Pr(s)/Pr(s) and moving the denominator a little we have
-        p(x, s) = Pr(s) sum_j [ Pr(a=j) Pr(s| a=j)/Pr(s) ]  p(x| s, a=j),
-        where the bracketed term is Bayes for Pr(a=j|s). Thus the mode conditioned state estimate is.
-        p(x | s) = sum_j Pr(a=j| s) p(x| s, a=j)
-
-        That is:
-            - we need to invoke discrete Bayes one time and
-            - reduce self.filter[s].reduce_mixture for each s
-        """
-
-        raise NotImplementedError  # TODO remove this when done
+        """Approximate a mixture of immstates as a single immstate"""
         # extract probabilities as array
-        ## eg. association weights/beta: Pr(a)
         weights = immstate_mixture.weights
-        ## eg. the association conditioned mode probabilities element [j, s] is for association j and mode s: Pr(s | a = j)
-        component_conditioned_mode_prob = np.array(
-            [c.weights.ravel() for c in immstate_mixture.components]
-        )
 
-        # flip conditioning order with Bayes to get Pr(s), and Pr(a | s)
-        mode_prob, mode_conditioned_component_prob = None  # TODO
+        mode_prob = []
+        for sk in range(len(self.filters)):
+            mode_prob_sk = 0
+            for ak in range(len(immstate_mixture.weights)):
+                weights_ak = immstate_mixture.weights[ak]
+                mode_prob_sk_given_ak = immstate_mixture.components[ak].weights[sk]
+                mode_prob_sk += mode_prob_sk_given_ak * weights_ak
 
-        # We need to gather all the state parameters from the associations for mode s into a
-        # single list in order to reduce it to a single parameter set.
-        # for instance loop through the modes, gather the paramters for the association of this mode
-        # into a single list and append the result of self.filters[s].reduce_mixture
-        # The mode s for association j should be available as imm_mixture.components[j].components[s]
+            mode_prob.append(mode_prob_sk)
 
-        mode_states: List[GaussParams] = None  # TODO
+        mixture_components = []
+        for sk in range(len(self.filters)):
+            weights = []
+            components = []
+            for ak in range(len(immstate_mixture.weights)):
+                posterior_given_sk_ak = immstate_mixture.components[ak].components[sk]
+                mode_prob_sk_given_ak = immstate_mixture.components[ak].weights[sk]
+                weights.append(mode_prob_sk_given_ak *
+                               immstate_mixture.weights[ak] / mode_prob[sk])
+                components.append(posterior_given_sk_ak)
 
-        immstate_reduced = MixtureParameters(mode_prob, mode_states)
+            mixture = MixtureParameters(weights, components)
+            reduced = self.filters[0].reduce_mixture(mixture)
+            mixture_components.append(reduced)
 
-        return immstate_reduced
+        reduced = MixtureParameters(mode_prob, mixture_components)
+
+        return reduced
 
     def estimate(self, immstate: MixtureParameters[MT]) -> GaussParams:
         """Calculate a state estimate with its covariance from immstate"""
 
-        # ! assuming all the modes have the same reduce and estimate
-        dataRed = self.filters[0].reduce_mixture(immstate)
-        return self.filters[0].estimate(dataRed)
+        # ! You can assume all the modes have the same reduce and estimate function
+        # ! and use eg. self.filters[0] functionality
+        data_reduced = self.filters[0].reduce_mixture(immstate)
+        estimate = data_reduced
+        
+        return estimate
+
+        # M = len(self.filters)
+        # estimates = []
+        # for i in range(M):
+        #     est = self.filters[i].estimate(data_reduced.components[i])
+        #     estimates.append(est)
+
+        # w = data_reduced.weights
+        # means = np.array([est.mean for est in estimates])
+        # covs = np.array([est.cov for est in estimates])
+
+        # M = len(data_reduced.weights)
+        # mean = sum([w[i]*means[i] for i in range(M)])
+        # cov_mean = sum([w[i]*covs[i] for i in range(M)])
+        # mean_diff = means - mean
+        # cov_soi = sum([w[i] * mean_diff[i] @ mean_diff[i].T for i in range(M)])
+
+        # estimate = GaussParams(mean, cov_mean + cov_soi)
+
+        # return estimate
 
     def gate(
         self,
@@ -303,12 +310,14 @@ class IMM(Generic[MT]):
     ) -> bool:
         """Check if z is within the gate of any mode in immstate in sensor_state"""
 
-        raise NotImplementedError  # TODO: remove when implemented
+        # THIS IS ONLY NEEDED FOR PDA. You can wait with implementation if you want
+        gated_per_mode = [
+            self.filters[i].gate(z, immstate.components[i],
+                                 gate_size_square, sensor_state=sensor_state)
+            for i in range(len(self.filters))
+        ]
 
-        # TODO: find which of the modes gates the measurement z, Hint: self.filters[0].gate
-        mode_gated: List[bool] = None
-
-        gated: bool = None  # TODO: check if _any_ of the modes gated the measurement
+        gated = True in gated_per_mode
         return gated
 
     def NISes(
@@ -331,8 +340,10 @@ class IMM(Generic[MT]):
             for fs, ms in zip(self.filters, immstate.components)
         ]
 
-        v_ave = np.average([gp.mean for gp in innovs], axis=0, weights=immstate.weights)
-        S_ave = np.average([gp.cov for gp in innovs], axis=0, weights=immstate.weights)
+        v_ave = np.average([gp.mean for gp in innovs],
+                           axis=0, weights=immstate.weights)
+        S_ave = np.average([gp.cov for gp in innovs],
+                           axis=0, weights=immstate.weights)
 
         NIS = (v_ave * np.linalg.solve(S_ave, v_ave)).sum()
         return NIS, NISes

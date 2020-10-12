@@ -123,15 +123,15 @@ if play_movie:
 # but no exceptions do not guarantee correct implementation.
 
 # sensor
-sigma_z = 10
-clutter_intensity = 1e-2
-PD = 0.8
-gate_size = 5
+sigma_z = 3
+clutter_intensity = 0.002
+PD = 0.99
+gate_size = 3
 
 # dynamic models
-sigma_a_CV = 0.5
-sigma_a_CT = 0.5
-sigma_omega = 0.3
+sigma_a_CV = 0.3
+sigma_a_CT = 0.1
+sigma_omega = 0.002*np.pi
 
 
 # markov chain
@@ -143,8 +143,10 @@ p10 = 0.9  # initvalue for mode probabilities
 PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
+# not valid
+
 mean_init = np.array([0, 0, 0, 0, 0])
-cov_init = np.diag([1000, 1000, 30, 30, 0.1]) ** 2  # THIS WILL NOT BE GOOD
+cov_init = np.diag([50, 50, 1, 1, 0.1]) ** 2  # THIS WILL NOT BE GOOD
 mode_probabilities_init = np.array([p10, (1 - p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 2)
@@ -184,9 +186,16 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     # You can look at the prediction estimate as well
     tracker_estimate = tracker.estimate(tracker_update)
 
-    NEES[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(4))
-    NEESpos[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2))
-    NEESvel[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2, 4))
+    NEES[k] = estats.NEES_indexed(
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(4)
+    )
+
+    NEESpos[k] = estats.NEES_indexed(
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(2)
+    )
+    NEESvel[k] = estats.NEES_indexed(
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(2, 4)
+    )
 
     tracker_predict_list.append(tracker_predict)
     tracker_update_list.append(tracker_update)
