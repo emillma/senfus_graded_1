@@ -17,57 +17,11 @@ import pda
 from gaussparams import GaussParams
 from mixturedata import MixtureParameters
 import estimationstatistics as estats
-
+from plotting_utils import apply_settings, plot_cov_ellipse2d
 # %% plot config check and style setup
 
-
 # to see your plot config
-print(f"matplotlib backend: {matplotlib.get_backend()}")
-print(f"matplotlib config file: {matplotlib.matplotlib_fname()}")
-print(f"matplotlib config dir: {matplotlib.get_configdir()}")
-plt.close("all")
-
-# try to set separate window ploting
-if "inline" in matplotlib.get_backend():
-    print("Plotting is set to inline at the moment:", end=" ")
-
-    if "ipykernel" in matplotlib.get_backend():
-        print("backend is ipykernel (IPython?)")
-        print("Trying to set backend to separate window:", end=" ")
-        import IPython
-
-        IPython.get_ipython().run_line_magic("matplotlib", "")
-    else:
-        print("unknown inline backend")
-
-print("continuing with this plotting backend", end="\n\n\n")
-
-
-# set styles
-try:
-    # installed with "pip install SciencePLots" (https://github.com/garrettj403/SciencePlots.git)
-    # gives quite nice plots
-    plt_styles = ["science", "grid", "bright", "no-latex"]
-    plt.style.use(plt_styles)
-    print(f"pyplot using style set {plt_styles}")
-except Exception as e:
-    print(e)
-    print("setting grid and only grid and legend manually")
-    plt.rcParams.update(
-        {
-            # setgrid
-            "axes.grid": True,
-            "grid.linestyle": ":",
-            "grid.color": "k",
-            "grid.alpha": 0.5,
-            "grid.linewidth": 0.5,
-            # Legend
-            "legend.frameon": True,
-            "legend.framealpha": 1.0,
-            "legend.fancybox": True,
-            "legend.numpoints": 1,
-        }
-    )
+apply_settings()
 
 
 # %% load data and plot
@@ -82,9 +36,10 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 fig1, ax1 = plt.subplots(num=1, clear=True)
 
 Z_plot_data = np.empty((0, 2), dtype=float)
-plot_measurement_distance = 45
+plot_measurement_distance = np.inf
 for Zk, xgtk in zip(Z, Xgt):
-    to_plot = np.linalg.norm(Zk - xgtk[None:2], axis=1) <= plot_measurement_distance
+    to_plot = np.linalg.norm(
+        Zk - xgtk[None:2], axis=1) <= plot_measurement_distance
     Z_plot_data = np.append(Z_plot_data, Zk[to_plot], axis=0)
 
 ax1.scatter(*Z_plot_data.T, color="C1")
@@ -139,10 +94,11 @@ assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 # init values
 mean_init = np.array([7000, 3500, 0, 0, 0])
-cov_init = np.diag([100, 100, 10, 10, 0.1]) ** 2  
+cov_init = np.diag([100, 100, 10, 10, 0.1]) ** 2
 mode_probabilities_init = np.array([p10, (1 - p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
-init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 2)
+init_imm_state = MixtureParameters(
+    mode_probabilities_init, [mode_states_init] * 2)
 
 assert np.allclose(
     np.sum(mode_probabilities_init), 1
@@ -181,14 +137,17 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     tracker_estimate = tracker.estimate(tracker_update)
 
     NEES[k] = estats.NEES_indexed(
-        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(4)
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
+            4)
     )
 
     NEESpos[k] = estats.NEES_indexed(
-        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(2)
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
+            2)
     )
     NEESvel[k] = estats.NEES_indexed(
-        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(2, 4)
+        tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
+            2, 4)
     )
 
     tracker_predict_list.append(tracker_predict)
@@ -229,7 +188,8 @@ fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
 axs3[0].plot(*x_hat.T[:2], label=r"$\hat x$")
 axs3[0].plot(*Xgt.T[:2], label="$x$")
 axs3[0].set_title(
-    f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel) = ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
+    f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel) "
+    "= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
 )
 axs3[0].axis("equal")
 # probabilities
@@ -267,46 +227,17 @@ fig5, axs5 = plt.subplots(2, num=5, clear=True)
 axs5[0].plot(np.cumsum(Ts), np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
 axs5[0].set_ylabel("position error")
 
-axs5[1].plot(np.cumsum(Ts), np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
+axs5[1].plot(np.cumsum(Ts), np.linalg.norm(
+    x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
 
-plt.show()
-
 # %% TBD: estimation "movie"
-def plot_cov_ellipse2d(
-    ax: plt.Axes,
-    mean: np.ndarray = np.zeros(2),
-    cov: np.ndarray = np.eye(2),
-    n_sigma: float = 1,
-    *,
-    edgecolor: "Color" = "C0",
-    facecolor: "Color" = "none",
-    **kwargs,  # extra Ellipse keyword arguments
-) -> matplotlib.patches.Ellipse:
-    """Plot a n_sigma covariance ellipse centered in mean into ax."""
-    ell_trans_mat = np.zeros((3, 3))
-    ell_trans_mat[:2, :2] = np.linalg.cholesky(cov)
-    ell_trans_mat[:2, 2] = mean
-    ell_trans_mat[2, 2] = 1
-
-    ell = matplotlib.patches.Ellipse(
-        (0.0, 0.0),
-        2.0 * n_sigma,
-        2.0 * n_sigma,
-        edgecolor=edgecolor,
-        facecolor=facecolor,
-        **kwargs,
-    )
-    trans = matplotlib.transforms.Affine2D(ell_trans_mat)
-    ell.set_transform(trans + ax.transData)
-    return ax.add_patch(ell)
-
 
 play_estimation_movie = True
 mTL = 0.2  # maximum transparancy (between 0 and 1);
 plot_pause = 1  # lenght to pause between time steps;
-start_k = 30
-end_k = start_k + 10
+start_k = 0
+end_k = K
 plot_range = slice(start_k, end_k)  # the range to go through
 
 # %k = 31; assert(all([k > 1, k <= K]), 'K must be in proper range')
@@ -327,22 +258,21 @@ for k, (Zk, pred_k, upd_k) in enumerate(
     ),
     start_k,
 ):
-    # k, (Zk, pred_k, upd_k, ak) = data
     (ax.cla() for ax in axs6)
     pl = []
-    gated = tracker.gate(Zk, pred_k)  # probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
+    gated = tracker.gate(Zk, pred_k)
     minG = 1e20 * np.ones(2)
     maxG = np.zeros(2)
     cond_upd_k = tracker.conditional_update(Zk[gated], pred_k)
     beta_k = tracker.association_probabilities(Zk[gated], pred_k)
     for s in range(2):
         mode_lines[s].set_data = (
-            np.array([u.components[s].mean[:2] for u in tracker_update_list[:k]]).T,
+            np.array([u.components[s].mean[:2]
+                      for u in tracker_update_list[:k]]).T,
         )
         axs6[1].plot(prob_hat[: (k - 1), s], color=f"C{s}")
         for j, cuj in enumerate(cond_upd_k):
             alpha = 0.7 * beta_k[j] * cuj.weights[s] + 0.3
-            # csj = mTL * co(s, :) + (1 - mTL) * (beta(j)*skupd(s, j)*co(s, :) + (1 - beta(j)*skupd(s, j)) * ones(1, 3)); % transparancy
             upd_km1_s = tracker_update_list[k - 1].components[s]
             pl.append(
                 axs6[0].plot(
@@ -362,9 +292,6 @@ for k, (Zk, pred_k, upd_k) in enumerate(
                     alpha=alpha,
                 )
             )
-            # axis([minAx(1), maxAx(1), minAx(2), maxAx(2)])
-            #%alpha(pl, beta(j)*skupd(s, j));
-            # drawnow;
             pl.append(
                 plot_cov_ellipse2d(
                     axs6[0],
@@ -376,8 +303,6 @@ for k, (Zk, pred_k, upd_k) in enumerate(
             )
 
         Sk = imm_filter.filters[s].innovation_cov([0, 0], pred_k.components[s])
-        # gateData = chol(Sk)' * [cos(thetas); sin(thetas)] * sqrt(tracker.gateSize) + squeeze(xbar(1:2, s, k));
-        # plot(gateData(1, :),gateData(2, :), '.--', 'Color', co(s,:))
         pl.append(
             plot_cov_ellipse2d(
                 axs6[0],
@@ -389,30 +314,7 @@ for k, (Zk, pred_k, upd_k) in enumerate(
         )
         meas_sc.set_offsets(Zk)
         pl.append(axs6[0].scatter(*Zk.T, color="r", marker="x"))
-        # if ak > 0:
-        #     meas_sc_true.set_offsets(Zk[ak - 1])
-        # else:
-        #     meas_sc_true.set_offsets(np.array([np.nan, np.nan]))
-
-        # for j = 1:size(xkupd, 3)
-        #     csj = mTL * co(s, :) + (1 - mTL) * (beta(j)*skupd(s, j)*co(s, :) + (1 - beta(j)*skupd(s, j)) * ones(1, 3)); % transparancy
-        #     plot([k-1, k], [probhat(s, k-1), skupd(s, j)], '--', 'color', csj)
-
-        # minGs = min(gateData, [], 2);
-        # minG = minGs .* (minGs < minG) + minG .* (minG < minGs);
-        # maxGs = max(gateData, [], 2);
-        # maxG = maxGs .* (maxGs > maxG) + maxG .* (maxG > maxGs);
-
-    # scale = 1
-    # minAx = minG - scale * (maxG - minG);
-    # maxAx = maxG + scale * (maxG - minG);
-    # axis([minAx(1), maxAx(1), minAx(2), maxAx(2)])
-    # %legend()
-
-    # mode probabilities
-
-    # axis([1, plotRange(end), 0, 1])
-    # drawnow;
-    plt.pause(plot_pause)
-
+    plt.gcf().canvas.draw_idle()
+    plt.gcf().canvas.start_event_loop(0.01)
 # %%
+plt.show()
