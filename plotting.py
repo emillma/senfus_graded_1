@@ -35,6 +35,7 @@ def plot_traj(
         Xgt,
         x_hat,
         Z,
+        gated_list,
         posRMSE,
         velRMSE,
         prob_hat,
@@ -43,7 +44,9 @@ def plot_traj(
 ):
 
     fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
-    axs3[0].scatter(*np.vstack(Z).T, color="C2", s=6)
+    gated_list = [
+        'g' if item else 'r' for sublist in gated_list for item in sublist]
+    axs3[0].scatter(*np.vstack(Z).T, color=gated_list, s=6)
     for i in range(x_hat.shape[0]-1):
         slice_tmp = slice(i, i+2)
         axs3[0].plot(*(x_hat[slice_tmp, :2].T),
@@ -198,3 +201,12 @@ def plot_NIS_NEES_model_specific(
     # print(
     #     f"ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
     # print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
+
+
+def get_rotation_variance(Xgt):
+    vel = Xgt[:, 2:]
+    unit_vectors = vel / np.linalg.norm(vel, axis=1)[:, None]
+    dot_product = np.sum(unit_vectors[1:] * unit_vectors[:-1], axis=1)
+    angle = np.arccos(dot_product)
+    return (f"Average rotation variance is"
+            f"{np.var(angle[np.where(np.isfinite(angle))])/np.pi}*pi")

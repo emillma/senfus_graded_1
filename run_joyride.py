@@ -20,7 +20,7 @@ import estimationstatistics as estats
 
 from plotting_utils import apply_settings, plot_cov_ellipse2d
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
-                      plot_NIS_NEES_model_specific)
+                      plot_NIS_NEES_model_specific, get_rotation_variance)
 
 # %% plot config check and style setup
 
@@ -41,15 +41,15 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 # %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
-sigma_z = 1.5
+sigma_z = 8
 clutter_intensity = 0.00009
 PD = 0.95
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 4
-sigma_a_CT = 1
-sigma_omega = 0.025*np.pi
+sigma_a_CV = 3
+sigma_a_CT = 0.5
+sigma_omega = 0.015*np.pi
 
 # markov chain
 PI11 = 0.95
@@ -181,7 +181,7 @@ ANEES = np.mean(NEES)
 
 if 1:
     plot_measurements(K, Ts, Xgt, Z)
-    plot_traj(Ts, Xgt, x_hat, Z, posRMSE, velRMSE, prob_hat,
+    plot_traj(Ts, Xgt, x_hat, Z, gated_list, posRMSE, velRMSE, prob_hat,
               peak_pos_deviation, peak_vel_deviation
               )
     plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
@@ -191,4 +191,6 @@ if 1:
                                  NIS_CV_list, NIS_CT_list,
                                  NEES_CV_list, NEES_CT_list,
                                  confprob)
+
+    print(get_rotation_variance(Xgt))
     plt.show()

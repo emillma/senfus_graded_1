@@ -28,7 +28,7 @@ apply_settings()
 filename_to_load = "data_for_imm_pda.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 K = loaded_data["K"].item()
-Ts = loaded_data["Ts"].item()
+Ts = [loaded_data["Ts"].item() for i in range(K)]
 Xgt = loaded_data["Xgt"].T
 Z = [zk.T for zk in loaded_data["Z"].ravel()]
 true_association = loaded_data["a"].ravel()
