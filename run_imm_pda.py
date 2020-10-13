@@ -1,4 +1,3 @@
-# %% imports
 from typing import List
 
 import scipy
@@ -9,44 +8,41 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from gaussparams import GaussParams
-from mixturedata import MixtureParameters
 import dynamicmodels
 import measurementmodels
 import ekf
 import imm
 import pda
+from gaussparams import GaussParams
+from mixturedata import MixtureParameters
 import estimationstatistics as estats
 
 from plotting_utils import apply_settings, plot_cov_ellipse2d
-
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
-                      plot_NIS_CV)
+                      plot_NIS_NEES_model_specific, get_rotation_variance)
 
 # %% plot config check and style setup
 
+# to see your plot config
 apply_settings()
 
 
-# %% load data
+# %% load data and plot
 filename_to_load = "data_for_imm_pda.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 K = loaded_data["K"].item()
-Ts = [loaded_data["Ts"].item() for i in range(K)]
+# Ts = loaded_data["Ts"].squeeze()
+Ts = [loaded_data["Ts"].item() for i in range(K-1)]
 Xgt = loaded_data["Xgt"].T
 Z = [zk.T for zk in loaded_data["Z"].ravel()]
-true_association = loaded_data["a"].ravel()
 
-# %% IMM-PDA
+# %% setup and track
 
-# THE PRESET PARAMETERS AND INITIAL VALUES WILL CAUSE TRACK LOSS!
-# Some reasoning and previous exercises should let you avoid track loss.
-# No exceptions should be generated if PDA works correctly with IMM,
-# but no exceptions do not guarantee correct implementation.
+# %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
 sigma_z = 3
-clutter_intensity = 0.002
+clutter_intensity = 0.0002
 PD = 0.99
 gate_size = 5
 
@@ -54,7 +50,6 @@ gate_size = 5
 sigma_a_CV = 0.3
 sigma_a_CT = 0.1
 sigma_omega = 0.002*np.pi
-
 
 # markov chain
 PI11 = 0.9
@@ -90,24 +85,52 @@ imm_filter = imm.IMM(ekf_filters, PI)
 
 tracker = pda.PDA(imm_filter, clutter_intensity, PD, gate_size)
 
-# init_imm_pda_state = tracker.init_filter_state(init__immstate)
-
-
 NEES = np.zeros(K)
 NEESpos = np.zeros(K)
 NEESvel = np.zeros(K)
 
+NIS_CV_list = []
+NIS_CT_list = []
+NEES_CV_list = []
+NEES_CT_list = []
+gated_list = []
 tracker_update = init_imm_state
 tracker_update_list = []
 tracker_predict_list = []
 tracker_estimate_list = []
+
+# First measurement is time 0 -> don't predict before first update.
+Ts = [0, *Ts]
+
 # estimate
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
+
     tracker_predict = tracker.predict(tracker_update, Ts[k])
     tracker_update = tracker.update(Zk, tracker_predict)
-
-    # You can look at the prediction estimate as well
     tracker_estimate = tracker.estimate(tracker_update)
+
+    gated = tracker.gate(Zk, tracker_predict)
+    Z_accepted = Zk[gated]
+    for z_accepted in Z_accepted:
+        NIS_CV_list.append([k, ekf_filters[0].NIS(
+            z_accepted, tracker_predict.components[0])])
+
+        NIS_CT_list.append([k, ekf_filters[1].NIS(
+            z_accepted, tracker_predict.components[1])])
+
+        cv_update = tracker_update.components[0]
+        cv_update = GaussParams(cv_update.mean[:4], cv_update.cov[:4, :4])
+        ct_update = tracker_update.components[1]
+        ct_update = GaussParams(ct_update.mean[:4], ct_update.cov[:4, :4])
+        NEES_CV_list.append([k, ekf_filters[0].NEES(
+            cv_update,
+            x_true_k[:4],
+            NEES_idx=np.arange(4))])
+
+        NEES_CT_list.append([k, ekf_filters[1].NEES(
+            ct_update,
+            x_true_k[:4],
+            NEES_idx=np.arange(4))])
 
     NEES[k] = estats.NEES_indexed(
         tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
@@ -123,6 +146,7 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
             2, 4)
     )
 
+    gated_list.append(gated)
     tracker_predict_list.append(tracker_predict)
     tracker_update_list.append(tracker_update)
     tracker_estimate_list.append(tracker_estimate)
@@ -155,22 +179,18 @@ ANEESpos = np.mean(NEESpos)
 ANEESvel = np.mean(NEESvel)
 ANEES = np.mean(NEES)
 
-#Plots
-# trajectory
-# #Fig 1
-plot_measurements(K, Ts, Xgt, Z)
-
-# #Fig 3
-plot_traj(Ts, Xgt, x_hat, Z, posRMSE, velRMSE, prob_hat,
+if 1:
+    plot_measurements(K, Ts, Xgt, Z)
+    plot_traj(Ts, Xgt, x_hat, Z, gated_list, posRMSE, velRMSE, prob_hat,
               peak_pos_deviation, peak_vel_deviation
               )
-# #Fig 4
-plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
-              CI2, CI4, CI2K, CI4K, confprob)
+    plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
+                 CI2, CI4, CI2K, CI4K, confprob)
+    plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
+    plot_NIS_NEES_model_specific(Ts,
+                                 NIS_CV_list, NIS_CT_list,
+                                 NEES_CV_list, NEES_CT_list,
+                                 confprob)
 
-#Fig 5 errors
-plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
-
-
-plt.show()
-# %%
+    print(get_rotation_variance(Xgt))
+    plt.show()
