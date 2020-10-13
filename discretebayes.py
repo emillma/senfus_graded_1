@@ -15,9 +15,8 @@ def discrete_bayes(
 
     joint = cond_pr * np.array(pr)[:, None]
 
-    marginal = joint.sum(axis=0)
+    marginal = cond_pr @ np.array(pr)
 
-    # Take care of rare cases of degenerate zero marginal,
     conditional = joint / marginal[None]
 
     # flip axes

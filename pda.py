@@ -27,30 +27,22 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
         filter_state: ET,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> List[bool]:  # gated (m x 1): gated(j) = true if measurement j is within gate
         """Gate/validate measurements: (z-h(x))'S^(-1)(z-h(x)) <= g^2."""
 
-        M = Z.shape[0]
         g_squared = self.gate_size ** 2
 
-        # The loop can be done using ether of these: normal loop, list comprehension or map
-        gated = list(map(
-            lambda z: self.state_filter.gate(z, filter_state, gate_size_square=g_squared, sensor_state=sensor_state),
-            Z))
-
-        # debug
-        # count = np.sum(gated)
-        # print(f"{count} out of {M} measurements used")
-
+        gated = [self.state_filter.gate(
+            z, filter_state, gate_size_square=g_squared,
+            sensor_state=sensor_state)
+            for z in Z]
         return gated
 
     def loglikelihood_ratios(
         self,  # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
         filter_state: ET,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:  # shape=(M + 1,), first element for no detection
         """ Calculates the posterior event loglikelihood ratios."""
@@ -63,10 +55,11 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         ll = np.empty(Z.shape[0] + 1)
 
         # calculate log likelihood ratios
-        ll[0] =  log_clutter + log_PND
+        ll[0] = log_clutter + log_PND
         for i, z in enumerate(Z):
             ak = i+1
-            ll[ak] = log_PD + self.state_filter.loglikelihood(z, filter_state, sensor_state=sensor_state)
+            ll[ak] = log_PD + self.state_filter.loglikelihood(
+                z, filter_state, sensor_state=sensor_state)
 
         return ll
 
@@ -75,13 +68,13 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
         filter_state: ET,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:  # beta, shape=(M + 1,): the association probabilities (normalized likelihood ratios)
         """calculate the poseterior event/association probabilities."""
 
         # log likelihoods
-        lls = self.loglikelihood_ratios(Z, filter_state, sensor_state=sensor_state)
+        lls = self.loglikelihood_ratios(
+            Z, filter_state, sensor_state=sensor_state)
 
         # lls_normalized[ak] = log(alpha) + lls[ak]
         # log(alpha) = -logsumexp(ll[:])
@@ -97,7 +90,6 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
         filter_state: ET,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> List[
         ET
@@ -106,10 +98,11 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         conditional_update = []
         conditional_update.append(
-                filter_state
+            filter_state
         )
         conditional_update.extend(
-                [self.state_filter.update(z, filter_state, sensor_state=sensor_state) for z in Z]
+            [self.state_filter.update(
+                z, filter_state, sensor_state=sensor_state) for z in Z]
         )
 
         return conditional_update
@@ -120,13 +113,11 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         """Reduce a Gaussian mixture to a single Gaussian."""
         return self.state_filter.reduce_mixture(mixture_filter_state)
 
-
     def update(
         self,
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
         filter_state: ET,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> ET:  # The filter_state updated by approximating the data association
         """
@@ -139,18 +130,21 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Zg = Z[gated]
 
         # find association probabilities
-        beta = self.association_probabilities(Zg, filter_state, sensor_state=sensor_state)
+        beta = self.association_probabilities(
+            Zg, filter_state, sensor_state=sensor_state)
 
         # find the mixture components
-        filter_state_updated_mixture_components = self.conditional_update(Zg, filter_state, sensor_state=sensor_state)
+        filter_state_updated_mixture_components = self.conditional_update(
+            Zg, filter_state, sensor_state=sensor_state)
 
         # make mixture
         filter_state_update_mixture = MixtureParameters(
-            beta, filter_state_updated_mixture_components 
+            beta, filter_state_updated_mixture_components
         )
 
         # reduce mixture
-        filter_state_updated_reduced = self.reduce_mixture(filter_state_update_mixture)
+        filter_state_updated_reduced = self.reduce_mixture(
+            filter_state_update_mixture)
 
         return filter_state_updated_reduced
 
@@ -160,12 +154,17 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Z: np.ndarray,
         filter_state: ET,
         Ts: float,
-        *,
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> ET:
-        """Perform a predict update cycle with Ts time units and measurements Z in sensor_state"""
-        filter_state_predicted = self.predict(filter_state, Ts, sensor_state=sensor_state)
-        filter_state_updated = self.update(Z, filter_state_predicted, sensor_state=sensor_state)
+        """Perform a predict update cycle with Ts time units 
+        and measurements Z in sensor_state"""
+
+        filter_state_predicted = self.predict(
+            filter_state, Ts, sensor_state=sensor_state)
+
+        filter_state_updated = self.update(
+            Z, filter_state_predicted, sensor_state=sensor_state)
+
         return filter_state_updated
 
     def estimate(self, filter_state: ET) -> GaussParams:
