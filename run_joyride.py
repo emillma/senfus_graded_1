@@ -46,13 +46,13 @@ PD = 0.95
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 2
-sigma_a_CT = 3
+sigma_a_CV = 3
+sigma_a_CT = 0.1
 sigma_omega = 0.02*np.pi
 
 # markov chain
-PI11 = 0.98
-PI22 = 0.98
+PI11 = 0.95
+PI22 = 0.95
 
 p10 = 0.9  # initvalue for mode probabilities
 
@@ -87,6 +87,10 @@ NEES = np.zeros(K)
 NEESpos = np.zeros(K)
 NEESvel = np.zeros(K)
 
+NIS_CV_list = []
+NIS_CT_list = []
+
+gated_list = []
 tracker_update = init_imm_state
 tracker_update_list = []
 tracker_predict_list = []
@@ -97,11 +101,19 @@ Ts = [0, *Ts]
 
 # estimate
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
+
     tracker_predict = tracker.predict(tracker_update, Ts[k])
     tracker_update = tracker.update(Zk, tracker_predict)
-
-    # You can look at the prediction estimate as well
     tracker_estimate = tracker.estimate(tracker_update)
+
+    gated = tracker.gate(Zk, tracker_predict)
+    Z_accepted = Zk[gated]
+    for z_accepted in Z_accepted:
+        NIS_CV_list.append([k, ekf_filters[0].NIS(
+            z_accepted, tracker_update.components[0])])
+
+        NIS_CT_list.append([k, ekf_filters[0].NIS(
+            z_accepted, tracker_update.components[1])])
 
     NEES[k] = estats.NEES_indexed(
         tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
@@ -117,6 +129,7 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
             2, 4)
     )
 
+    gated_list.append(gated)
     tracker_predict_list.append(tracker_predict)
     tracker_update_list.append(tracker_update)
     tracker_estimate_list.append(tracker_estimate)
