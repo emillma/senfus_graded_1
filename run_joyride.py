@@ -40,15 +40,15 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 # %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
-sigma_z = 3
-clutter_intensity = 0.00009
-PD = 0.95
+sigma_z = 6
+clutter_intensity = 0.002
+PD = 0.999
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.5
-sigma_a_CT = 0.4
-sigma_omega = 0.03*np.pi
+sigma_a_CV = 0.4
+sigma_a_CT = 0.1
+sigma_omega = 0.3*np.pi
 
 # markov chain
 PI11 = 0.9
