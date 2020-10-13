@@ -17,7 +17,10 @@ import pda
 from gaussparams import GaussParams
 from mixturedata import MixtureParameters
 import estimationstatistics as estats
+
 from plotting_utils import apply_settings, plot_cov_ellipse2d
+from plotting import plot_measurements, plot_traj, plot_NEES_CI, plot_errors
+
 # %% plot config check and style setup
 
 # to see your plot config
@@ -145,3 +148,13 @@ CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
 ANEESpos = np.mean(NEESpos)
 ANEESvel = np.mean(NEESvel)
 ANEES = np.mean(NEES)
+
+
+plot_measurements(K, Ts, Xgt, Z)
+plot_traj(Ts, Xgt, x_hat, Z, posRMSE, velRMSE, prob_hat,
+          peak_pos_deviation, peak_vel_deviation
+          )
+plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
+             CI2, CI4, CI2K, CI4K, confprob)
+plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
+plt.show()

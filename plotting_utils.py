@@ -4,7 +4,6 @@ import numpy as np
 
 
 def apply_settings():
-    plt.ion()
     print(f"matplotlib backend: {matplotlib.get_backend()}")
     print(f"matplotlib config file: {matplotlib.matplotlib_fname()}")
     print(f"matplotlib config dir: {matplotlib.get_configdir()}")
