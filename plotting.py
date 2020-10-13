@@ -4,6 +4,7 @@ import scipy
 import scipy.io
 from plotting_utils import apply_settings, plot_cov_ellipse2d
 import numpy as np
+from matplotlib import cm
 
 
 def plot_measurements(
@@ -43,14 +44,20 @@ def plot_traj(
 
     fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
     axs3[0].scatter(*np.vstack(Z).T, color="C2", s=6)
-    axs3[0].plot(*x_hat.T[:2], label=r"$\hat x$")
-    axs3[0].plot(*Xgt.T[:2], label="$x$")
+    for i in range(x_hat.shape[0]-1):
+        slice_tmp = slice(i, i+2)
+        axs3[0].plot(*(x_hat[slice_tmp, :2].T),
+                     color=cm.cool(prob_hat[i, 0]), linewidth=3)
+        axs3[1].plot(np.cumsum(Ts)[slice_tmp], prob_hat[slice_tmp, 0],
+                     color=cm.cool(prob_hat[i, 0]))
+
+    axs3[0].plot(*Xgt.T[:2], label="$x$", color="C2")
     axs3[0].set_title(
         f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel)= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
     )
     axs3[0].axis("equal")
+    # axs3[0].legend()
     # probabilities
-    axs3[1].plot(np.cumsum(Ts), prob_hat)
     axs3[1].set_ylim([0, 1])
     axs3[1].set_ylabel("mode probability")
     axs3[1].set_xlabel("time")
@@ -72,6 +79,8 @@ def plot_NEES_CI(
         confprob):
 
     fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
+    for ax in axs4:
+        ax.set_yscale('log')
     axs4[0].plot(np.cumsum(Ts), NEESpos)
     axs4[0].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")
     axs4[0].set_ylabel("NEES pos")

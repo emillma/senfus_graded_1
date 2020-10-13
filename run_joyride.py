@@ -40,19 +40,19 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 # %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
-sigma_z = 6
-clutter_intensity = 0.002
-PD = 0.999
+sigma_z = 15
+clutter_intensity = 0.00009
+PD = 0.95
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.4
-sigma_a_CT = 0.1
-sigma_omega = 0.3*np.pi
+sigma_a_CV = 2
+sigma_a_CT = 3
+sigma_omega = 0.02*np.pi
 
 # markov chain
-PI11 = 0.9
-PI22 = 0.9
+PI11 = 0.98
+PI22 = 0.98
 
 p10 = 0.9  # initvalue for mode probabilities
 
@@ -149,12 +149,12 @@ ANEESpos = np.mean(NEESpos)
 ANEESvel = np.mean(NEESvel)
 ANEES = np.mean(NEES)
 
-
-plot_measurements(K, Ts, Xgt, Z)
-plot_traj(Ts, Xgt, x_hat, Z, posRMSE, velRMSE, prob_hat,
-          peak_pos_deviation, peak_vel_deviation
-          )
-plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
-             CI2, CI4, CI2K, CI4K, confprob)
-plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
-plt.show()
+if 1:
+    plot_measurements(K, Ts, Xgt, Z)
+    plot_traj(Ts, Xgt, x_hat, Z, posRMSE, velRMSE, prob_hat,
+              peak_pos_deviation, peak_vel_deviation
+              )
+    plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
+                 CI2, CI4, CI2K, CI4K, confprob)
+    plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
+    plt.show()
