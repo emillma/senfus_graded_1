@@ -26,10 +26,10 @@ def plot_measurements(
     ax1.scatter(*Z_plot_data.T, color="C1")
     ax1.plot(*Xgt.T[:2], color="C0", linewidth=1.5)
     ax1.set_title("True trajectory and the nearby measurements")
-    plt.show(block=False)
-
 
 # trajectory
+
+
 def plot_traj(
         Ts,
         Xgt,
@@ -128,20 +128,58 @@ def plot_errors(
     axs5[1].set_ylabel("velocity error")
 
 
-def plot_NIS_CV(
+def plot_NIS_NEES_model_specific(
         Ts,
-        NIS_CV_LIST):
+        NIS_CV_list,
+        NIS_CT_list,
+        NEES_CV_list,
+        NEES_CT_list,
+        confprob):
 
-    fig6, axs6 = plt.subplots(3, sharex=True, num=4, clear=True)
+    fig6, axs6 = plt.subplots(4, sharex=True, num=6, clear=True)
     for ax in axs6:
         ax.set_yscale('log')
-    Ts_list = [np.cumsum(Ts)[k] for (k, data) in NIS_CV_LIST]
-    NIS_data = [data for (k, data) in NIS_CV_LIST]
-    # axs6[0].plot(Ts_list, NIS_data)
-    # axs4[0].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")
-    # axs4[0].set_ylabel("NEES pos")
-    # inCIpos = np.mean((CI2[0] <= NEESpos) * (NEESpos <= CI2[1]))
-    # axs4[0].set_title(f"{inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+    Ts_list = [np.cumsum(Ts)[k] for (k, data) in NIS_CV_list]
+    NIS_data = [data for (k, data) in NIS_CV_list]
+
+    CI4 = np.array(scipy.stats.chi2.interval(confprob, 4))
+
+    axs6[0].plot(Ts_list, NIS_data)
+    axs6[0].plot([0, sum(Ts)], np.repeat(CI4[None], 2, 0), "--r")
+    axs6[0].set_ylabel("NIS CV")
+    inCIpos = np.mean((CI4[0] <= NIS_data) * (NIS_data <= CI4[1]))
+    axs6[0].set_title(
+        f"NIS CV, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+
+    Ts_list = [np.cumsum(Ts)[k] for (k, data) in NIS_CT_list]
+    NIS_data = [data for (k, data) in NIS_CT_list]
+
+    axs6[1].plot(Ts_list, NIS_data)
+    axs6[1].plot([0, sum(Ts)], np.repeat(CI4[None], 2, 0), "--r")
+    axs6[1].set_ylabel("NIS CT")
+    inCIpos = np.mean((CI4[0] <= NIS_data) * (NIS_data <= CI4[1]))
+    axs6[1].set_title(
+        f"NIS CT, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+
+    Ts_list = [np.cumsum(Ts)[k] for (k, data) in NEES_CV_list]
+    NEES_data = [data for (k, data) in NEES_CV_list]
+
+    axs6[2].plot(Ts_list, NEES_data)
+    axs6[2].plot([0, sum(Ts)], np.repeat(CI4[None], 2, 0), "--r")
+    axs6[2].set_ylabel("NEES CV")
+    inCIpos = np.mean((CI4[0] <= NEES_data) * (NEES_data <= CI4[1]))
+    axs6[2].set_title(
+        f"NEES CV, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+
+    Ts_list = [np.cumsum(Ts)[k] for (k, data) in NEES_CT_list]
+    NEES_data = [data for (k, data) in NEES_CT_list]
+
+    axs6[3].plot(Ts_list, NEES_data)
+    axs6[3].plot([0, sum(Ts)], np.repeat(CI4[None], 2, 0), "--r")
+    axs6[3].set_ylabel("NEES CT")
+    inCIpos = np.mean((CI4[0] <= NEES_data) * (NEES_data <= CI4[1]))
+    axs6[3].set_title(
+        f"NEES CT, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
 
     # axs4[1].plot(np.cumsum(Ts), NEESvel)
     # axs4[1].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")

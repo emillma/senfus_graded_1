@@ -20,7 +20,7 @@ import estimationstatistics as estats
 
 from plotting_utils import apply_settings, plot_cov_ellipse2d
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
-                      plot_NIS_CV)
+                      plot_NIS_NEES_model_specific)
 
 # %% plot config check and style setup
 
@@ -41,15 +41,15 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 # %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
-sigma_z = 15
+sigma_z = 1.5
 clutter_intensity = 0.00009
 PD = 0.95
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 3
-sigma_a_CT = 0.1
-sigma_omega = 0.02*np.pi
+sigma_a_CV = 4
+sigma_a_CT = 1
+sigma_omega = 0.025*np.pi
 
 # markov chain
 PI11 = 0.95
@@ -118,17 +118,17 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
         NIS_CT_list.append([k, ekf_filters[1].NIS(
             z_accepted, tracker_predict.components[1])])
 
-        ct_update = tracker_update.components[0]
+        cv_update = tracker_update.components[0]
+        cv_update = GaussParams(cv_update.mean[:4], cv_update.cov[:4, :4])
+        ct_update = tracker_update.components[1]
         ct_update = GaussParams(ct_update.mean[:4], ct_update.cov[:4, :4])
-        cv_update = tracker_update.components[1]
-        cv_update = GaussParams(ct_update.mean[:4], ct_update.cov[:4, :4])
         NEES_CV_list.append([k, ekf_filters[0].NEES(
-            ct_update,
+            cv_update,
             x_true_k,
             NEES_idx=np.arange(4))])
 
         NEES_CT_list.append([k, ekf_filters[1].NEES(
-            cv_update,
+            ct_update,
             x_true_k,
             NEES_idx=np.arange(4))])
 
@@ -187,5 +187,8 @@ if 1:
     plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
                  CI2, CI4, CI2K, CI4K, confprob)
     plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
-    # plot_NIS_CV(Ts, NIS_CV_list)
+    plot_NIS_NEES_model_specific(Ts,
+                                 NIS_CV_list, NIS_CT_list,
+                                 NEES_CV_list, NEES_CT_list,
+                                 confprob)
     plt.show()
