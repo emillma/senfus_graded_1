@@ -19,7 +19,8 @@ from mixturedata import MixtureParameters
 import estimationstatistics as estats
 
 from plotting_utils import apply_settings, plot_cov_ellipse2d
-from plotting import plot_measurements, plot_traj, plot_NEES_CI, plot_errors
+from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
+                      plot_NIS_CV)
 
 # %% plot config check and style setup
 
@@ -89,6 +90,8 @@ NEESvel = np.zeros(K)
 
 NIS_CV_list = []
 NIS_CT_list = []
+NEES_CV_list = []
+NEES_CT_list = []
 
 gated_list = []
 tracker_update = init_imm_state
@@ -110,10 +113,24 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     Z_accepted = Zk[gated]
     for z_accepted in Z_accepted:
         NIS_CV_list.append([k, ekf_filters[0].NIS(
-            z_accepted, tracker_update.components[0])])
+            z_accepted, tracker_predict.components[0])])
 
-        NIS_CT_list.append([k, ekf_filters[0].NIS(
-            z_accepted, tracker_update.components[1])])
+        NIS_CT_list.append([k, ekf_filters[1].NIS(
+            z_accepted, tracker_predict.components[1])])
+
+        ct_update = tracker_update.components[0]
+        ct_update = GaussParams(ct_update.mean[:4], ct_update.cov[:4, :4])
+        cv_update = tracker_update.components[1]
+        cv_update = GaussParams(ct_update.mean[:4], ct_update.cov[:4, :4])
+        NEES_CV_list.append([k, ekf_filters[0].NEES(
+            ct_update,
+            x_true_k,
+            NEES_idx=np.arange(4))])
+
+        NEES_CT_list.append([k, ekf_filters[1].NEES(
+            cv_update,
+            x_true_k,
+            NEES_idx=np.arange(4))])
 
     NEES[k] = estats.NEES_indexed(
         tracker_estimate.mean, tracker_estimate.cov, x_true_k, idxs=np.arange(
@@ -170,4 +187,5 @@ if 1:
     plot_NEES_CI(Ts, NEESpos, ANEESpos, NEESvel, ANEESvel, NEES, ANEES,
                  CI2, CI4, CI2K, CI4K, confprob)
     plot_errors(Ts, Xgt, x_hat, CI2, CI4, CI2K, CI4K, confprob)
+    # plot_NIS_CV(Ts, NIS_CV_list)
     plt.show()
