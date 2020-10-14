@@ -111,6 +111,8 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
 
     gated = tracker.gate(Zk, tracker_predict)
     Z_accepted = Zk[gated]
+
+    # Get NIS and NEES for individual ekf filters
     for z_accepted in Z_accepted:
         NIS_CV_list.append([k, ekf_filters[0].NIS(
             z_accepted, tracker_predict.components[0])])

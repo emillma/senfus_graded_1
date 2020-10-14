@@ -34,6 +34,8 @@ import discretebayes
 MT = TypeVar("MT")  # a type variable to be the mode type
 
 # %% IMM
+
+
 @dataclass
 class IMM(Generic[MT]):
     # The M filters the IMM relies on
@@ -119,24 +121,25 @@ class IMM(Generic[MT]):
         Ts: float,
     ) -> MixtureParameters[MT]:
         """
-        Predict the immstate Ts time units ahead approximating the mixture step.
+        Predict the immstate Ts time units ahead approximating the mixture step
 
         Ie. Predict mode probabilities, condition states on predicted mode,
-        appoximate resulting state distribution as Gaussian for each mode, then predict each mode.
+        appoximate resulting state distribution as Gaussian for each mode, 
+        then predict each mode.
         """
 
-        predicted_mode_probability, mixing_probability = self.mix_probabilities(
+        predicted_mode_prob, mixing_prob = self.mix_probabilities(
             immstate, Ts
         )
 
         mixed_mode_states: List[MT] = self.mix_states(
-            immstate, mixing_probability)
+            immstate, mixing_prob)
 
         predicted_mode_states = self.mode_matched_prediction(
             mixed_mode_states, Ts)
 
         predicted_immstate = MixtureParameters(
-            predicted_mode_probability, predicted_mode_states
+            predicted_mode_prob, predicted_mode_states
         )
         return predicted_immstate
 
@@ -161,7 +164,8 @@ class IMM(Generic[MT]):
         immstate: MixtureParameters[MT],
         sensor_state: Dict[str, Any] = None,
     ) -> np.ndarray:
-        """Calculate the mode probabilities in immstate updated with z in sensor_state"""
+        """Calculate the mode probabilities in immstate updated 
+        with z in sensor_state"""
 
         mode_loglikelihood = [
             filt.loglikelihood(z, gaussparam)
@@ -209,10 +213,12 @@ class IMM(Generic[MT]):
         Ts: float,
         sensor_state: Dict[str, Any] = None,
     ) -> MixtureParameters[MT]:
-        """Predict immstate with Ts time units followed by updating it with z in sensor_state"""
+        """Predict immstate with Ts time units followed by updating it 
+        with z in sensor_state"""
 
         predicted_immstate = self.predict(immstate, Ts)
-        updated_immstate = self.update(z, predicted_immstate, sensor_state=sensor_state)
+        updated_immstate = self.update(
+            z, predicted_immstate, sensor_state=sensor_state)
 
         return updated_immstate
 
@@ -223,8 +229,6 @@ class IMM(Generic[MT]):
         *,
         sensor_state: Dict[str, Any] = None,
     ) -> float:
-
-        # THIS IS ONLY NEEDED FOR IMM-PDA. You can therefore wait if you prefer.
 
         mode_conditioned_logllike = [
             self.filters[i].loglikelihood(
@@ -245,10 +249,12 @@ class IMM(Generic[MT]):
         mode_prob = []
         for sk in range(len(self.filters)):
             mode_prob_sk = 0
+
             for ak in range(len(immstate_mixture.weights)):
                 weights_ak = immstate_mixture.weights[ak]
-                mode_prob_sk_given_ak = immstate_mixture.components[ak].weights[sk]
-                mode_prob_sk += mode_prob_sk_given_ak * weights_ak
+                mode_prob_sk_giv_ak = (
+                    immstate_mixture.components[ak].weights[sk])
+                mode_prob_sk += mode_prob_sk_giv_ak * weights_ak
 
             mode_prob.append(mode_prob_sk)
 
@@ -256,14 +262,18 @@ class IMM(Generic[MT]):
         for sk in range(len(self.filters)):
             weights = []
             components = []
+
             for ak in range(len(immstate_mixture.weights)):
-                posterior_given_sk_ak = immstate_mixture.components[ak].components[sk]
-                mode_prob_sk_given_ak = immstate_mixture.components[ak].weights[sk]
-                weights.append(mode_prob_sk_given_ak *
+                posterior_giv_sk_ak = (
+                    immstate_mixture.components[ak].components[sk])
+                mode_prob_sk_giv_ak = (
+                    immstate_mixture.components[ak].weights[sk])
+                weights.append(mode_prob_sk_giv_ak *
                                immstate_mixture.weights[ak] / mode_prob[sk])
-                components.append(posterior_given_sk_ak)
+                components.append(posterior_giv_sk_ak)
 
             mixture = MixtureParameters(weights, components)
+            # Modes have same reduce function
             reduced = self.filters[0].reduce_mixture(mixture)
             mixture_components.append(reduced)
 
@@ -274,32 +284,11 @@ class IMM(Generic[MT]):
     def estimate(self, immstate: MixtureParameters[MT]) -> GaussParams:
         """Calculate a state estimate with its covariance from immstate"""
 
-        # ! You can assume all the modes have the same reduce and estimate function
-        # ! and use eg. self.filters[0] functionality
+        # Modes have same reduce function
         data_reduced = self.filters[0].reduce_mixture(immstate)
         estimate = data_reduced
-        
+
         return estimate
-
-        # M = len(self.filters)
-        # estimates = []
-        # for i in range(M):
-        #     est = self.filters[i].estimate(data_reduced.components[i])
-        #     estimates.append(est)
-
-        # w = data_reduced.weights
-        # means = np.array([est.mean for est in estimates])
-        # covs = np.array([est.cov for est in estimates])
-
-        # M = len(data_reduced.weights)
-        # mean = sum([w[i]*means[i] for i in range(M)])
-        # cov_mean = sum([w[i]*covs[i] for i in range(M)])
-        # mean_diff = means - mean
-        # cov_soi = sum([w[i] * mean_diff[i] @ mean_diff[i].T for i in range(M)])
-
-        # estimate = GaussParams(mean, cov_mean + cov_soi)
-
-        # return estimate
 
     def gate(
         self,
@@ -308,9 +297,9 @@ class IMM(Generic[MT]):
         gate_size_square: float,
         sensor_state: Dict[str, Any] = None,
     ) -> bool:
-        """Check if z is within the gate of any mode in immstate in sensor_state"""
+        """Check if z is within the gate of any mode in immstate 
+        in sensor_state"""
 
-        # THIS IS ONLY NEEDED FOR PDA. You can wait with implementation if you want
         gated_per_mode = [
             self.filters[i].gate(z, immstate.components[i],
                                  gate_size_square, sensor_state=sensor_state)
@@ -319,31 +308,3 @@ class IMM(Generic[MT]):
 
         gated = True in gated_per_mode
         return gated
-
-    def NISes(
-        self,
-        z: np.ndarray,
-        immstate: MixtureParameters[MT],
-        *,
-        sensor_state: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, np.ndarray]:
-        """Calculate NIS per mode and the average"""
-        NISes = np.array(
-            [
-                fs.NIS(z, ms, sensor_state=sensor_state)
-                for fs, ms in zip(self.filters, immstate.components)
-            ]
-        )
-
-        innovs = [
-            fs.innovation(z, ms, sensor_state=sensor_state)
-            for fs, ms in zip(self.filters, immstate.components)
-        ]
-
-        v_ave = np.average([gp.mean for gp in innovs],
-                           axis=0, weights=immstate.weights)
-        S_ave = np.average([gp.cov for gp in innovs],
-                           axis=0, weights=immstate.weights)
-
-        NIS = (v_ave * np.linalg.solve(S_ave, v_ave)).sum()
-        return NIS, NISes
