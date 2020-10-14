@@ -17,7 +17,7 @@ from gaussparams import GaussParams
 from mixturedata import MixtureParameters
 import estimationstatistics as estats
 
-from plotting_utils import apply_settings, plot_cov_ellipse2d
+from plotting_utils import apply_settings
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
                       plot_NIS_NEES_model_specific, get_rotation_variance)
 
@@ -42,7 +42,7 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 
 # sensor
 sigma_z = 3
-clutter_intensity = 0.0002
+clutter_intensity = 0.002
 PD = 0.99
 gate_size = 5
 
