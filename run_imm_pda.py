@@ -4,7 +4,6 @@ import scipy
 import scipy.io
 import scipy.stats
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -20,7 +19,7 @@ import estimationstatistics as estats
 from plotting_utils import apply_settings
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
                       plot_NIS_NEES_model_specific, get_rotation_variance,
-                      get_measurements_variance)
+                      get_measurements_variance, get_acceleration_std)
 
 # %% plot config check and style setup
 
@@ -193,5 +192,8 @@ if 1:
                                  NEES_CV_list, NEES_CT_list,
                                  confprob)
 
+    print('Some data analysis for better guess')
     print(get_rotation_variance(Xgt))
+    print(get_measurements_variance(Xgt, Z, gated_list))
+    print(get_acceleration_std(Xgt, Z, gated_list))
     plt.show()

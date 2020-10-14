@@ -5,7 +5,6 @@ import scipy
 import scipy.io
 import scipy.stats
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -18,7 +17,7 @@ from gaussparams import GaussParams
 from mixturedata import MixtureParameters
 import estimationstatistics as estats
 
-from plotting_utils import apply_settings, plot_cov_ellipse2d
+from plotting_utils import apply_settings
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
                       plot_NIS_NEES_model_specific, get_rotation_variance,
                       get_measurements_variance, get_acceleration_std)
@@ -43,7 +42,7 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 
 # sensor
 sigma_z = 22.7
-clutter_intensity = 0.00009
+clutter_intensity = 0.00005
 PD = 0.95
 gate_size = 4
 
@@ -156,14 +155,12 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
 x_hat = np.array([est.mean for est in tracker_estimate_list])
 prob_hat = np.array([upd.weights for upd in tracker_update_list])
 
-# calculate a performance metrics
 poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=0)
 velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=0)
 posRMSE = np.sqrt(
     np.mean(poserr ** 2)
-)  # not true RMSE (which is over monte carlo simulations)
+)
 velRMSE = np.sqrt(np.mean(velerr ** 2))
-# not true RMSE (which is over monte carlo simulations)
 peak_pos_deviation = poserr.max()
 peak_vel_deviation = velerr.max()
 
@@ -193,6 +190,7 @@ if 1:
                                  NEES_CV_list, NEES_CT_list,
                                  confprob)
 
+    print('Some data analysis for better guess')
     print(get_rotation_variance(Xgt))
     print(get_measurements_variance(Xgt, Z, gated_list))
     print(get_acceleration_std(Xgt, Z, gated_list))
