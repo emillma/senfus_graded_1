@@ -44,8 +44,18 @@ def plot_traj(
 
     fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
     gated_list = [
-        'g' if item else 'r' for sublist in gated_list for item in sublist]
-    axs3[0].scatter(*np.vstack(Z).T, color=gated_list, s=6)
+        gated for sublist in gated_list for gated in sublist]
+    accepted_measurements = np.array([
+        measurement for measurement, gate in zip(np.vstack(Z), gated_list)
+        if gate])
+    refused_measurements = np.array([
+        measurement for measurement, gate in zip(np.vstack(Z), gated_list)
+        if not gate])
+    axs3[0].scatter(*accepted_measurements.T, color='g', s=14,
+                    label='accepted measurements')
+    axs3[0].scatter(*refused_measurements.T, color='r', s=2,
+                    label='refused measurements')
+
     for i in range(x_hat.shape[0]-1):
         slice_tmp = slice(i, i+2)
         axs3[0].plot(*(x_hat[slice_tmp, :2].T),
@@ -53,7 +63,7 @@ def plot_traj(
         axs3[1].plot(np.cumsum(Ts)[slice_tmp], prob_hat[slice_tmp, 0],
                      color=cm.cool(prob_hat[i, 0]))
 
-    axs3[0].plot(*Xgt.T[:2], label="$x$", color="C2")
+    axs3[0].plot(*Xgt.T[:2], label="$Xgt$", color="C2")
     axs3[0].set_title(
         f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel)"
         f"= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
