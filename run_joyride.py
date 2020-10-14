@@ -20,7 +20,8 @@ import estimationstatistics as estats
 
 from plotting_utils import apply_settings, plot_cov_ellipse2d
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
-                      plot_NIS_NEES_model_specific, get_rotation_variance)
+                      plot_NIS_NEES_model_specific, get_rotation_variance,
+                      get_measurements_variance, get_acceleration_std)
 
 # %% plot config check and style setup
 
@@ -41,15 +42,15 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 # %% IMM-PDA with CV/CT-models copied from run_im_pda.py
 
 # sensor
-sigma_z = 8
+sigma_z = 22.7
 clutter_intensity = 0.00009
 PD = 0.95
-gate_size = 5
+gate_size = 4
 
 # dynamic models
-sigma_a_CV = 3
-sigma_a_CT = 0.5
-sigma_omega = 0.015*np.pi
+sigma_a_CV = 1.2
+sigma_a_CT = 0.8
+sigma_omega = 0.065*np.pi
 
 # markov chain
 PI11 = 0.95
@@ -193,4 +194,6 @@ if 1:
                                  confprob)
 
     print(get_rotation_variance(Xgt))
+    print(get_measurements_variance(Xgt, Z, gated_list))
+    print(get_acceleration_std(Xgt, Z, gated_list))
     plt.show()

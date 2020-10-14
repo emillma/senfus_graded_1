@@ -59,6 +59,8 @@ def plot_traj(
         f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel)= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
     )
     axs3[0].axis("equal")
+    axs3[0].legend()
+
     # axs3[0].legend()
     # probabilities
     axs3[1].set_ylim([0, 1])
@@ -204,9 +206,26 @@ def plot_NIS_NEES_model_specific(
 
 
 def get_rotation_variance(Xgt):
-    vel = Xgt[:, 2:]
+    vel = Xgt[:, 2:4]
     unit_vectors = vel / np.linalg.norm(vel, axis=1)[:, None]
     dot_product = np.sum(unit_vectors[1:] * unit_vectors[:-1], axis=1)
     angle = np.arccos(dot_product)
-    return (f"Average rotation variance is"
-            f"{np.var(angle[np.where(np.isfinite(angle))])/np.pi}*pi")
+    return (f"Rotation std is"
+            f"{np.std(angle[np.where(np.isfinite(angle))])/np.pi}*pi")
+
+
+def get_measurements_variance(Xgt, Z, gated_list,):
+    pos = Xgt[:, :2]
+    errors = []
+    for p, z, g in zip(pos, Z, gated_list):
+        error = p[None, :] - z[g]
+        errors.append(error)
+    errors = np.ravel(np.vstack(errors))
+    return (f"Measurement std for gated measurements is "
+            f"{np.std(errors)}")
+
+
+def get_acceleration_std(Xgt, Z, gated_list):
+    vel = Xgt[1:, 2:4] - Xgt[:-1, 2:4]
+    return (f"Acceleration std  is "
+            f"{np.std(np.ravel(vel))}")

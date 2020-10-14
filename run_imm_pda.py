@@ -19,7 +19,8 @@ import estimationstatistics as estats
 
 from plotting_utils import apply_settings
 from plotting import (plot_measurements, plot_traj, plot_NEES_CI, plot_errors,
-                      plot_NIS_NEES_model_specific, get_rotation_variance)
+                      plot_NIS_NEES_model_specific, get_rotation_variance,
+                      get_measurements_variance)
 
 # %% plot config check and style setup
 
