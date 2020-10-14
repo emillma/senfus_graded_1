@@ -59,7 +59,7 @@ def plot_traj(
     for i in range(x_hat.shape[0]-1):
         slice_tmp = slice(i, i+2)
         axs3[0].plot(*(x_hat[slice_tmp, :2].T),
-                     color=cm.cool(prob_hat[i, 0]), linewidth=3.5)
+                     color=cm.cool(prob_hat[i, 0]), linewidth=3)
         axs3[1].plot(np.cumsum(Ts)[slice_tmp], prob_hat[slice_tmp, 0],
                      color=cm.cool(prob_hat[i, 0]))
 
