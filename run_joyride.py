@@ -49,12 +49,12 @@ gate_size = 4
 
 # dynamic models
 sigma_a_CV = 1.2
-sigma_a_CT = 0.8
-sigma_omega = 0.065*np.pi
+sigma_a_CT = 0.3
+sigma_omega = 0.02*np.pi
 
 # markov chain
-PI11 = 0.95
-PI22 = 0.95
+PI11 = 0.9
+PI22 = 0.9
 
 p10 = 0.9  # initvalue for mode probabilities
 

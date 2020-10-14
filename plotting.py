@@ -90,19 +90,19 @@ def plot_NEES_CI(
     axs4[0].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")
     axs4[0].set_ylabel("NEES pos")
     inCIpos = np.mean((CI2[0] <= NEESpos) * (NEESpos <= CI2[1]))
-    axs4[0].set_title(f"{inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+    axs4[0].set_title(f"{inCIpos*100:.2f}% inside {confprob*100:.1f}% CI")
 
     axs4[1].plot(np.cumsum(Ts), NEESvel)
     axs4[1].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")
     axs4[1].set_ylabel("NEES vel")
     inCIvel = np.mean((CI2[0] <= NEESvel) * (NEESvel <= CI2[1]))
-    axs4[1].set_title(f"{inCIvel*100:.1f}% inside {confprob*100:.1f}% CI")
+    axs4[1].set_title(f"{inCIvel*100:.2f}% inside {confprob*100:.1f}% CI")
 
     axs4[2].plot(np.cumsum(Ts), NEES)
     axs4[2].plot([0, sum(Ts)], np.repeat(CI4[None], 2, 0), "--r")
     axs4[2].set_ylabel("NEES")
     inCI = np.mean((CI2[0] <= NEES) * (NEES <= CI2[1]))
-    axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
+    axs4[2].set_title(f"{inCI*100:.2f}% inside {confprob*100:.1f}% CI")
 
     print(
         f"ANEESpos = {ANEESpos:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
@@ -154,7 +154,7 @@ def plot_NIS_NEES_model_specific(
     axs6[0].set_ylabel("NIS CV")
     inCIpos = np.mean((CI4[0] <= NIS_data) * (NIS_data <= CI4[1]))
     axs6[0].set_title(
-        f"NIS CV, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+        f"NIS CV, {inCIpos*100:.2f}% inside {confprob*100:.1f}% CI")
 
     Ts_list = [np.cumsum(Ts)[k] for (k, data) in NIS_CT_list]
     NIS_data = [data for (k, data) in NIS_CT_list]
@@ -164,7 +164,7 @@ def plot_NIS_NEES_model_specific(
     axs6[1].set_ylabel("NIS CT")
     inCIpos = np.mean((CI4[0] <= NIS_data) * (NIS_data <= CI4[1]))
     axs6[1].set_title(
-        f"NIS CT, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+        f"NIS CT, {inCIpos*100:.2f}% inside {confprob*100:.1f}% CI")
 
     Ts_list = [np.cumsum(Ts)[k] for (k, data) in NEES_CV_list]
     NEES_data = [data for (k, data) in NEES_CV_list]
@@ -174,7 +174,7 @@ def plot_NIS_NEES_model_specific(
     axs6[2].set_ylabel("NEES CV")
     inCIpos = np.mean((CI4[0] <= NEES_data) * (NEES_data <= CI4[1]))
     axs6[2].set_title(
-        f"NEES CV, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+        f"NEES CV, {inCIpos*100:.2f}% inside {confprob*100:.1f}% CI")
 
     Ts_list = [np.cumsum(Ts)[k] for (k, data) in NEES_CT_list]
     NEES_data = [data for (k, data) in NEES_CT_list]
@@ -184,7 +184,7 @@ def plot_NIS_NEES_model_specific(
     axs6[3].set_ylabel("NEES CT")
     inCIpos = np.mean((CI4[0] <= NEES_data) * (NEES_data <= CI4[1]))
     axs6[3].set_title(
-        f"NEES CT, {inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+        f"NEES CT, {inCIpos*100:.2f}% inside {confprob*100:.1f}% CI")
 
     # axs4[1].plot(np.cumsum(Ts), NEESvel)
     # axs4[1].plot([0, sum(Ts)], np.repeat(CI2[None], 2, 0), "--r")
