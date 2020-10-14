@@ -4,6 +4,7 @@ import scipy
 import scipy.io
 import numpy as np
 from matplotlib import cm
+from matplotlib.colors import Normalize
 
 
 def plot_measurements(
@@ -55,15 +56,17 @@ def plot_traj(
                     label='accepted measurements')
     axs3[0].scatter(*refused_measurements.T, color='r', s=2,
                     label='refused measurements')
-
     for i in range(x_hat.shape[0]-1):
         slice_tmp = slice(i, i+2)
         axs3[0].plot(*(x_hat[slice_tmp, :2].T),
-                     color=cm.cool(prob_hat[i, 0]), linewidth=3)
+                     color=cm.cool(prob_hat[i, 0]), linewidth=3.5)
         axs3[1].plot(np.cumsum(Ts)[slice_tmp], prob_hat[slice_tmp, 0],
                      color=cm.cool(prob_hat[i, 0]))
 
-    axs3[0].plot(*Xgt.T[:2], label="$Xgt$", color="C2")
+    sm = plt.cm.ScalarMappable(cmap=cm.cool, norm=Normalize(vmin=0, vmax=1))
+    fig3.colorbar(sm, aspect=30)
+
+    axs3[0].plot(*Xgt.T[:2], label="$Xgt$", color=[0, 0, 0, 0.7], linewidth=1)
     axs3[0].set_title(
         f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel)"
         f"= ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
@@ -74,6 +77,7 @@ def plot_traj(
     # axs3[0].legend()
     # probabilities
     axs3[1].set_ylim([0, 1])
+    axs3[1].set_title('Mode Probability')
     axs3[1].set_ylabel("mode probability")
     axs3[1].set_xlabel("time")
 
