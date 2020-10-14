@@ -125,7 +125,7 @@ velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=0)
 posRMSE = np.sqrt(
     np.mean(poserr ** 2)
 )
-prob_hat = np.ones(x_hat.shape)
+prob_hat = np.ones(x_hat.shape)  # to avoid having to change ploting files
 velRMSE = np.sqrt(np.mean(velerr ** 2))
 peak_pos_deviation = poserr.max()
 peak_vel_deviation = velerr.max()
