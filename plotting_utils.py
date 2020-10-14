@@ -26,7 +26,8 @@ def apply_settings():
 
     # set styles
     try:
-        # installed with "pip install SciencePLots" (https://github.com/garrettj403/SciencePlots.git)
+        # installed with "pip install SciencePLots"
+        # (https://github.com/garrettj403/SciencePlots.git)
         # gives quite nice plots
         plt_styles = ["science", "grid", "no-latex"]
         # plt.style.use(plt_styles)

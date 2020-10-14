@@ -1,11 +1,7 @@
 from typing import (
-    Collection,
     Generic,
     TypeVar,
-    Union,
     Sequence,
-    Any,
-    List,
 )
 
 # from singledispatchmethod import singledispatchmethod  # pip install

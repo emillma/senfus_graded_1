@@ -231,7 +231,8 @@ def f_CT(
             omega,
         ]
     )
-    assert np.all(np.isfinite(xp)), f"Non finite calculation in CT predict for x={x}."
+    assert np.all(np.isfinite(
+        xp)), f"Non finite calculation in CT predict for x={x}."
     max_diff = np.abs(xp - f_m2_withT(x, Ts)).max()
     clearance = 1e-5 if np.abs(x[4]) > 1e-4 else 2e-3
     # assert max_diff < clearance, "CT transition not consistent with MATLAB version"
@@ -258,21 +259,24 @@ def F_CT(
 
     F = np.array(
         [
-            [1, 0, Ts * sincth, -Ts * coscth, Ts ** 2 * (u0 * dsincth - v0 * dcoscth)],
-            [0, 1, Ts * coscth, Ts * sincth, Ts ** 2 * (u0 * dcoscth + v0 * dsincth)],
+            [1, 0, Ts * sincth, -Ts * coscth, Ts **
+                2 * (u0 * dsincth - v0 * dcoscth)],
+            [0, 1, Ts * coscth, Ts * sincth, Ts **
+                2 * (u0 * dcoscth + v0 * dsincth)],
             [0, 0, cth, -sth, -Ts * (u0 * sth + v0 * cth)],
             [0, 0, sth, cth, Ts * (u0 * cth - v0 * sth)],
             [0, 0, 0, 0, 1],
         ]
     )
-    assert np.all(np.isfinite(F)), f"Non finite calculation in CT Jacobian for x={x}."
+    assert np.all(np.isfinite(
+        F)), f"Non finite calculation in CT Jacobian for x={x}."
     max_diff = np.abs(F - Phi_m2_withT(x, Ts)).max()
     clearance = 1e-5 if np.abs(x[4]) > 1e-4 else 2.5e-3
     # if max_diff < clearance:
     #     print("ASSERT IGNORED: CT transition Jacobian not consistent with MATLAB version")
-    #assert (
+    # assert (
     #    max_diff < clearance
-    #), "CT transition Jacobian not consistent with MATLAB version"
+    # ), "CT transition Jacobian not consistent with MATLAB version"
     return F
 
 
@@ -322,13 +326,13 @@ def Phi_m2_withT(x, T):
         )
 
         r = x[4]
-        #%u = x(3);
-        #%v = x(4);
+        # %u = x(3);
+        # %v = x(4);
 
         colX = np.array([1, 0, 0, 0, 0])
         colY = np.array([0, 1, 0, 0, 0])
-        colU = np.array([sth / r, (1 - cth) / r, cth, sth, 0,])
-        colV = np.array([-(1 - cth) / r, sth / r, -sth, cth, 0,])
+        colU = np.array([sth / r, (1 - cth) / r, cth, sth, 0, ])
+        colV = np.array([-(1 - cth) / r, sth / r, -sth, cth, 0, ])
 
         Linmatrix = np.stack([colX, colY, colU, colV, Jacobi_omega]).T
     else:

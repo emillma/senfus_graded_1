@@ -61,7 +61,7 @@ PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 # init values
-mean_init = np.array([7000, 3500, 0, 0, 0])
+mean_init = np.array([7200, 3700, 0, 0, 0])
 cov_init = np.diag([100, 100, 10, 10, 0.1]) ** 2
 mode_probabilities_init = np.array([p10, (1 - p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
@@ -169,8 +169,6 @@ peak_vel_deviation = velerr.max()
 confprob = 0.9
 CI2 = np.array(scipy.stats.chi2.interval(confprob, 2))
 CI4 = np.array(scipy.stats.chi2.interval(confprob, 4))
-
-confprob = confprob
 CI2K = np.array(scipy.stats.chi2.interval(confprob, 2 * K)) / K
 CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
 ANEESpos = np.mean(NEESpos)
