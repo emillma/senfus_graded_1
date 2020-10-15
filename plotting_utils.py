@@ -23,7 +23,11 @@ def apply_settings():
             print("unknown inline backend")
 
     print("continuing with this plotting backend", end="\n\n\n")
+    font = {'family': 'normal',
+            'weight': 'bold',
+            'size': 22}
 
+    matplotlib.rc('font', **font)
     # set styles
     try:
         # installed with "pip install SciencePLots"
