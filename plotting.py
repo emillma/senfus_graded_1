@@ -60,8 +60,10 @@ def plot_traj(
         slice_tmp = slice(i, i+2)
         axs3[0].plot(*(x_hat[slice_tmp, :2].T),
                      color=cm.cool(prob_hat[i, 0]), linewidth=3)
-        axs3[1].plot(np.cumsum(Ts)[slice_tmp], prob_hat[slice_tmp, 0],
-                     color=cm.cool(prob_hat[i, 0]))
+    axs3[1].plot(np.cumsum(Ts), prob_hat[:, 0], label='cv')
+    axs3[1].plot(np.cumsum(Ts), prob_hat[:, 1], label='ct')
+    axs3[1].plot(np.cumsum(Ts), prob_hat[:, 2], label='cvhigh')
+    axs3[1].legend()
 
     sm = plt.cm.ScalarMappable(cmap=cm.cool, norm=Normalize(vmin=0, vmax=1))
     fig3.colorbar(sm, aspect=30)
