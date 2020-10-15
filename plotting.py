@@ -216,9 +216,11 @@ def get_measurements_variance(Xgt, Z, gated_list,):
     for p, z, g in zip(pos, Z, gated_list):
         error = p[None, :] - z[g]
         errors.append(error)
-    errors = np.ravel(np.vstack(errors))
+    errors_array = np.ravel(np.vstack(errors))
     return (f"Measurement std for gated measurements is "
-            f"{np.std(errors)}")
+            f"{np.std(errors_array)}\n"
+            f"Measurement mean for gated measurements is "
+            f"{np.mean(np.vstack(errors), axis=0)}")
 
 
 def get_acceleration_std(Xgt, Z, gated_list):
